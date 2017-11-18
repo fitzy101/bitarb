@@ -9,4 +9,4 @@ $(PROG): $(SRC)
 	chmod +x $(PROG)
 
 clean: 
-	rm bitarb 2>&1 >/dev/null
+	rm bitarb 2>/dev/null

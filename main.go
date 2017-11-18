@@ -59,10 +59,23 @@ type Market struct {
 var (
 	markets  map[string]Market
 	loglevel int
+	allArbs  map[string]CurrArb
 )
+
+type Arb struct {
+	Diff float64 // the arbitrage value
+}
+
+type CurrArb struct {
+	Arb *Arb
+	Mut *sync.RWMutex
+}
 
 func main() {
 	loglevel = LOGERROR
+
+	// Initialise the global arb store.
+	allArbs = make(map[string]CurrArb)
 
 	// Initialise available markets.
 	markets = make(map[string]Market)
@@ -88,9 +101,22 @@ func main() {
 	constructPairs(&pairs, "BTC", "BCH", btcMarkets)
 	constructPairs(&pairs, "BTC", "XRP", btcMarkets)
 
+	// Create a record for all of the arbitrage pairs in the global object>
+	// These will be updated periodically.
+	allArbs["LTC/BTC/AUD"] = CurrArb{Arb: &Arb{Diff: 0.00}, Mut: new(sync.RWMutex)}
+	allArbs["BCH/BTC/AUD"] = CurrArb{Arb: &Arb{Diff: 0.00}, Mut: new(sync.RWMutex)}
+	allArbs["XRP/BTC/AUD"] = CurrArb{Arb: &Arb{Diff: 0.00}, Mut: new(sync.RWMutex)}
+	allArbs["ETH/BTC/AUD"] = CurrArb{Arb: &Arb{Diff: 0.00}, Mut: new(sync.RWMutex)}
+
 	// Start calculating!
 	ticker := time.NewTicker(time.Second * 20)
 	go func() {
+		// Catch any segfaults.
+		defer func() {
+			if r := recover(); r != nil {
+				start(pairs)
+			}
+		}()
 		for _ = range ticker.C {
 			start(pairs)
 		}
@@ -142,38 +168,55 @@ func calcArbitrage(pairs []Pair) {
 	crypFee := pairs[0].market.CrypFee
 	name := pairs[0].market.Name
 
-	fmt.Printf("===== %s =====\n", name)
+	fmt.Printf("=========== %s ===========\n", name)
 
 	// LTC/AUD
 	ltcVal := curr["LTC/AUD"] * dollFee
 	ltcBtcVal := curr["LTC/BTC"] * crypFee * curr["BTC/AUD"] * dollFee
 	ltcBtcDiff := getDiff(ltcVal, ltcBtcVal)
-	printVals(ltcVal, ltcBtcVal, ltcBtcDiff, "LTC/AUD", "LTC/BTC/AUD")
+	updateArb("LTC/BTC/AUD", ltcBtcDiff)
+	printVals(ltcVal, ltcBtcVal, "LTC/AUD", "LTC/BTC/AUD")
 
 	// BCH/AUD
 	bchVal := curr["BCH/AUD"] * dollFee
 	bchBtcVal := curr["BCH/BTC"] * crypFee * curr["BTC/AUD"] * dollFee
 	bchBtcDiff := getDiff(bchVal, bchBtcVal)
-	printVals(bchVal, bchBtcVal, bchBtcDiff, "BCH/AUD", "BCH/BTC/AUD")
+	updateArb("BCH/BTC/AUD", bchBtcDiff)
+	printVals(bchVal, bchBtcVal, "BCH/AUD", "BCH/BTC/AUD")
 
 	// XRP/AUD
 	xrpVal := curr["XRP/AUD"] * dollFee
 	xrpBtcVal := curr["XRP/BTC"] * crypFee * curr["BTC/AUD"] * dollFee
 	xrpBtcDiff := getDiff(xrpVal, xrpBtcVal)
-	printVals(xrpVal, xrpBtcVal, xrpBtcDiff, "XRP/AUD", "XRP/BTC/AUD")
+	updateArb("XRP/BTC/AUD", xrpBtcDiff)
+	printVals(xrpVal, xrpBtcVal, "XRP/AUD", "XRP/BTC/AUD")
 
 	// ETH/AUD
 	ethVal := curr["ETH/AUD"] * dollFee
 	ethBtcVal := curr["ETH/BTC"] * crypFee * curr["BTC/AUD"] * dollFee
 	ethBtcDiff := getDiff(ethVal, ethBtcVal)
-	printVals(ethVal, ethBtcVal, ethBtcDiff, "ETH/AUD", "ETH/BTC/AUD")
+	updateArb("ETH/BTC/AUD", ethBtcDiff)
+	printVals(ethVal, ethBtcVal, "ETH/AUD", "ETH/BTC/AUD")
 }
 
-func printVals(pair, triple, diff float64, pairName, tripName string) {
+func updateArb(name string, diff float64) {
+	allArbs[name].Mut.Lock()
+	allArbs[name].Arb.Diff = diff
+	allArbs[name].Mut.Unlock()
+}
+
+func readArb(name string) float64 {
+	allArbs[name].Mut.RLock()
+	d := allArbs[name].Arb.Diff
+	allArbs[name].Mut.RUnlock()
+	return d
+}
+
+func printVals(pair, triple float64, pairName, tripName string) {
 	fmt.Printf("===== %s =====\n", tripName)
 	fmt.Printf("Value of %s: %.5f\n", pairName, pair)
 	fmt.Printf("Value of %s: %.5f\n", tripName, triple)
-	fmt.Printf("DIFF AFTER CONVERTING %.5f%%\n\n", diff)
+	fmt.Printf("DIFF AFTER CONVERTING %.5f%%\n\n", readArb(tripName))
 }
 
 func getDiff(pair, trip float64) float64 {
