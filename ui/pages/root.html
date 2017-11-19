@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>{{.Title}}</title>
+	</head>
+	<body>
+		<h2>Exchange: {{.Market}}</h2>
+		<p>Note: All conversions include associated fees.</p>
+		<p>This information is freely available, I hold no liability for decisions made as a result of viewing data from this site.</p>
+		<p>Developed and maintained by Michael Fitz-Payne (www.github.com/fitzy101).</p>
+		<hr>
+		<h3>LTC/AUD</h3>
+		<div>
+			Pair: {{.Ltc.PairName}}<br>
+			Value (best offer): {{.Ltc.PairVal}}<br>
+			Triple: {{.Ltc.TripName}}<br>
+			Value: {{.Ltc.TripVal}}<br>
+			<strong>Difference (%): {{.Ltc.Diff}}</strong>
+			<br>
+		</div>
+		<hr>
+		<h3>BCH/AUD</h3>
+		<div>
+			Pair: {{.Bch.PairName}}<br>
+			Value (best offer): {{.Bch.PairVal}}<br>
+			Triple: {{.Bch.TripName}}<br>
+			Value: {{.Bch.TripVal}}<br>
+			<strong>Difference (%): {{.Bch.Diff}}</strong>
+			<br>
+		</div>
+		<hr>
+		<h3>ETH/AUD</h3>
+		<div>
+			Pair: {{.Eth.PairName}}<br>
+			Value (best offer): {{.Eth.PairVal}}<br>
+			Triple: {{.Eth.TripName}}<br>
+			Value: {{.Eth.TripVal}}<br>
+			<strong>Difference (%): {{.Eth.Diff}}</strong>
+			<br>
+		</div>
+		<hr>
+		<h3>XRP/AUD</h3>
+		<div>
+			Pair: {{.Xrp.PairName}}<br>
+			Value (best offer): {{.Xrp.PairVal}}<br>
+			Triple: {{.Xrp.TripName}}<br>
+			Value: {{.Xrp.TripVal}}<br>
+			<strong>Difference (%): {{.Xrp.Diff}}</strong>
+			<br>
+		</div>
+		<hr>
+	</body>
+</html>
