@@ -56,7 +56,7 @@ func renderRoot() ([]byte, error) {
 		Xrp    triple
 		Eth    triple
 	}{
-		Title:  "BITARB.COM",
+		Title:  "BITARB",
 		Ltc:    trips["LTC/AUD"],
 		Bch:    trips["BCH/AUD"],
 		Xrp:    trips["XRP/AUD"],
